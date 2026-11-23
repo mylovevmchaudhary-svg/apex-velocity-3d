@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="theme-color" content="#00f2fe">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <title>Apex Velocity 3D - Car & Bike Racing</title>
+  <link rel="manifest" href="manifest.json">
+  <link rel="stylesheet" href="style.css">
+  <!-- Three.js 3D Library with CDN Fallback -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script>
+    if (typeof THREE === 'undefined') {
+      document.write('<script src="https://unpkg.com/three@0.128.0/build/three.min.js"><\/script>');
+    }
+  </script>
+</head>
+<body>
+  <!-- 3D Canvas Container -->
+  <div id="game-container"></div>
+
+  <!-- Start / Pause Menu Overlay -->
+  <div id="start-screen" class="screen-overlay">
+    <div class="menu-card">
+      <div class="game-badge">3D ULTRA RACING</div>
+      <h1 class="game-title">APEX <span>VELOCITY</span></h1>
+      <p class="game-subtitle">PC & Mobile High-Speed 3D Car & Bike Racing</p>
+
+      <div class="vehicle-picker">
+        <div class="picker-title">CHOOSE YOUR RIDE:</div>
+        <div class="picker-options">
+          <button id="pick-car-btn" class="pick-btn active">
+            <span class="icon">🏎️</span>
+            <span class="name">APEX GT</span>
+            <span class="type">Super Car</span>
+          </button>
+          <button id="pick-bike-btn" class="pick-btn">
+            <span class="icon">🏍️</span>
+            <span class="name">VIPER RR</span>
+            <span class="type">Super Bike</span>
+          </button>
+        </div>
+      </div>
+
+      <div class="controls-guide">
+        <div class="guide-box">
+          <strong>🖥️ PC Controls:</strong>
+          <span>WASD / Arrow Keys: Drive & Steer</span>
+          <span>SPACE: Drift / Handbrake | SHIFT: Nitro</span>
+          <span>V: Switch Vehicle | C: Camera | R: Reset</span>
+        </div>
+        <div class="guide-box">
+          <strong>📱 Mobile Controls:</strong>
+          <span>On-Screen Touch Buttons (Steering, Gas, Brake, Nitro)</span>
+        </div>
+      </div>
+
+      <button id="start-btn" class="action-btn start-pulse">START RACE 🏁</button>
+    </div>
+  </div>
+
+  <!-- HUD: Heads-Up Display -->
+  <div id="hud">
+    <!-- Top Bar: Scores & Vehicle Switch -->
+    <div class="hud-top">
+      <div class="stat-box">
+        <span class="stat-label">SCORE</span>
+        <span id="score-display" class="stat-val">0</span>
+      </div>
+      <div class="stat-box">
+        <span class="stat-label">DISTANCE</span>
+        <span id="dist-display" class="stat-val">0.0 km</span>
+      </div>
+      <div class="top-controls">
+        <button id="btn-toggle-cam" class="hud-btn" title="Toggle Camera (C)">📷 CAM</button>
+        <button id="btn-switch-vehicle" class="hud-btn highlight" title="Switch Vehicle (V)">
+          <span id="vehicle-icon">🏎️</span> <span id="vehicle-name">CAR</span>
+        </button>
+        <button id="btn-audio" class="hud-btn" title="Mute/Unmute">🔊</button>
+      </div>
+    </div>
+
+    <!-- Center notifications (Speed Boost, Drift Score, Checkpoint) -->
+    <div id="announcement" class="announcement"></div>
+
+    <!-- Bottom Dashboard: Speedometer, Gear, RPM & Nitro -->
+    <div class="hud-bottom">
+      <div class="dashboard-cluster">
+        <div class="gear-indicator">
+          <span class="gear-label">GEAR</span>
+          <span id="gear-display" class="gear-val">1</span>
+        </div>
+
+        <div class="speed-cluster">
+          <div class="speed-value" id="speed-display">0</div>
+          <div class="speed-unit">KM/H</div>
+        </div>
+
+        <div class="bars-container">
+          <!-- RPM Bar -->
+          <div class="gauge-wrapper">
+            <span class="bar-tag">RPM</span>
+            <div class="bar-track">
+              <div id="rpm-bar" class="bar-fill rpm-fill" style="width: 10%;"></div>
+            </div>
+          </div>
+          <!-- Nitro Bar -->
+          <div class="gauge-wrapper">
+            <span class="bar-tag">NITRO</span>
+            <div class="bar-track">
+              <div id="nitro-bar" class="bar-fill nitro-fill" style="width: 100%;"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- On-Screen Mobile Touch Controls -->
+  <div id="mobile-controls">
+    <!-- Left: Steering -->
+    <div class="touch-cluster touch-left">
+      <button id="touch-left" class="touch-btn steer-btn" aria-label="Steer Left">◀</button>
+      <button id="touch-right" class="touch-btn steer-btn" aria-label="Steer Right">▶</button>
+    </div>
+
+    <!-- Right: Pedals & Nitro -->
+    <div class="touch-cluster touch-right">
+      <button id="touch-drift" class="touch-btn action-circle-btn drift-color" aria-label="Handbrake">DRIFT</button>
+      <button id="touch-nitro" class="touch-btn action-circle-btn nitro-color" aria-label="Nitro Boost">⚡ NITRO</button>
+      <div class="pedals-group">
+        <button id="touch-brake" class="touch-btn pedal-btn brake-pedal" aria-label="Brake">BRAKE</button>
+        <button id="touch-gas" class="touch-btn pedal-btn gas-pedal" aria-label="Gas">DRIVE</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main Game Logic -->
+  <script src="game.js"></script>
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./sw.js').catch(() => {});
+      });
+    }
+  </script>
+</body>
+</html>
