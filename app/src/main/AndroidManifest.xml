@@ -7,7 +7,7 @@
         android:allowBackup="true"
         android:label="Apex Velocity 3D"
         android:supportsRtl="true"
-        android:theme="@android:style/Theme.NoTitleBar.Fullscreen"
+        android:theme="@style/Theme.ApexVelocity3D"
         android:hardwareAccelerated="true">
 
         <activity
@@ -15,7 +15,7 @@
             android:exported="true"
             android:configChanges="orientation|screenSize|keyboardHidden|screenLayout"
             android:screenOrientation="sensorLandscape"
-            android:theme="@android:style/Theme.NoTitleBar.Fullscreen">
+            android:theme="@style/Theme.ApexVelocity3D">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
