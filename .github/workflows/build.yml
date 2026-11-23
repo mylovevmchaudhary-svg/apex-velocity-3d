@@ -5,6 +5,9 @@ on:
     branches: [ main, master ]
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 jobs:
   build:
     name: Build Android APK & AAB Bundle
@@ -37,11 +40,10 @@ jobs:
         run: |
           gradle assembleDebug assembleRelease bundleRelease
 
-      - name: Sign APK with Official apksigner (v1 + v2 + v3)
+      - name: Sign APK and AAB
         run: |
           mkdir -p build_output
 
-          # Generate clean release keystore
           keytool -genkeypair -v \
             -keystore release.keystore \
             -alias apexkey \
@@ -52,37 +54,40 @@ jobs:
             -keypass apexpass123 \
             -dname "CN=ApexVelocity, OU=Gaming, O=ApexStudio, L=Mumbai, S=MH, C=IN"
 
-          # Locate apksigner in Android SDK
           APKSIGNER=$(find $ANDROID_HOME/build-tools -name apksigner | sort -V | tail -n 1)
-          echo "Using apksigner at: $APKSIGNER"
-
           RELEASE_APK=$(ls app/build/outputs/apk/release/*.apk | head -n 1)
-          $APKSIGNER sign --ks release.keystore --ks-pass pass:apexpass123 --ks-key-alias apexkey --key-pass pass:apexpass123 --v1-signing-enabled true --v2-signing-enabled true --v3-signing-enabled true --out build_output/ApexVelocity3D-Signed.apk $RELEASE_APK
-          $APKSIGNER verify --verbose build_output/ApexVelocity3D-Signed.apk
+          $APKSIGNER sign --ks release.keystore --ks-pass pass:apexpass123 --ks-key-alias apexkey --key-pass pass:apexpass123 --v1-signing-enabled true --v2-signing-enabled true --v3-signing-enabled true --out build_output/ApexVelocity3D.apk $RELEASE_APK
+          $APKSIGNER verify --verbose build_output/ApexVelocity3D.apk
 
-          # Also copy Debug APK (Guaranteed 100% installable on any Android phone)
-          cp app/build/outputs/apk/debug/*.apk build_output/ApexVelocity3D-Debug.apk
-
-          # Sign AAB Bundle for Google Play Store
           AAB_FILE=$(ls app/build/outputs/bundle/release/*.aab | head -n 1)
           jarsigner -keystore release.keystore -storepass apexpass123 -keypass apexpass123 $AAB_FILE apexkey
           cp $AAB_FILE build_output/ApexVelocity3D-PlayStore.aab
 
-          echo "Final builds ready:"
+          echo "Final builds ready in build_output:"
           ls -lh build_output/
 
-      - name: Upload APKs (Direct Phone Install)
+      - name: Upload Artifacts
         uses: actions/upload-artifact@v4
         with:
           name: ApexVelocity3D-APK
-          path: |
-            build_output/ApexVelocity3D-Signed.apk
-            build_output/ApexVelocity3D-Debug.apk
+          path: build_output/ApexVelocity3D.apk
           retention-days: 14
 
-      - name: Upload AAB Bundle (Google Play Store)
-        uses: actions/upload-artifact@v4
+      - name: Create Official GitHub Release (Direct Download)
+        uses: softprops/action-gh-release@v2
+        if: github.ref == 'refs/heads/main'
         with:
-          name: ApexVelocity3D-AAB-Bundle
-          path: build_output/ApexVelocity3D-PlayStore.aab
-          retention-days: 14
+          tag_name: v1.0.2
+          name: "Apex Velocity 3D v1.0.2 (Direct APK Download)"
+          body: |
+            ### 🏁 Apex Velocity 3D - Direct Download
+
+            📱 **Direct APK (No zip file, tap to install):**
+            Download `ApexVelocity3D.apk` directly on your phone and tap to play!
+          files: |
+            build_output/ApexVelocity3D.apk
+            build_output/ApexVelocity3D-PlayStore.aab
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

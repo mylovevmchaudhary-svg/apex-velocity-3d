@@ -2,14 +2,12 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
     <uses-permission android:name="android.permission.INTERNET" />
-    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
-    <uses-permission android:name="android.permission.WAKE_LOCK" />
 
     <application
         android:allowBackup="true"
         android:label="Apex Velocity 3D"
         android:supportsRtl="true"
-        android:theme="@style/Theme.ApexVelocity3D"
+        android:theme="@android:style/Theme.NoTitleBar.Fullscreen"
         android:hardwareAccelerated="true">
 
         <activity
@@ -17,7 +15,7 @@
             android:exported="true"
             android:configChanges="orientation|screenSize|keyboardHidden|screenLayout"
             android:screenOrientation="sensorLandscape"
-            android:theme="@style/Theme.ApexVelocity3D.Fullscreen">
+            android:theme="@android:style/Theme.NoTitleBar.Fullscreen">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
