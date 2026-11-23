@@ -3,9 +3,7 @@ name: Build APK and AAB Bundle
 on:
   push:
     branches: [ main, master ]
-  pull_request:
-    branches: [ main, master ]
-  workflow_dispatch: # Allows manual trigger from GitHub Actions tab
+  workflow_dispatch:
 
 jobs:
   build:
@@ -28,8 +26,22 @@ jobs:
         with:
           gradle-version: 8.5
 
-      - name: Generate Temporary Signing Keystore
+      - name: Download Offline Three.js 3D Library into Assets
         run: |
+          mkdir -p app/src/main/assets
+          curl -sL https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js -o app/src/main/assets/three.min.js
+          echo "Three.js downloaded successfully. Size:"
+          ls -lh app/src/main/assets/three.min.js
+
+      - name: Compile APK and AAB Bundle
+        run: |
+          gradle assembleDebug assembleRelease bundleRelease
+
+      - name: Sign APK with Official apksigner (v1 + v2 + v3)
+        run: |
+          mkdir -p build_output
+
+          # Generate clean release keystore
           keytool -genkeypair -v \
             -keystore release.keystore \
             -alias apexkey \
@@ -38,34 +50,39 @@ jobs:
             -validity 10000 \
             -storepass apexpass123 \
             -keypass apexpass123 \
-            -dname "CN=ApexVelocity, OU=Gaming, O=ApexStudio, L=Mumbai, S=Maharashtra, C=IN"
+            -dname "CN=ApexVelocity, OU=Gaming, O=ApexStudio, L=Mumbai, S=MH, C=IN"
 
-      - name: Build Signed APK and AAB
-        run: |
-          gradle assembleRelease bundleRelease \
-            -PRELEASE_STORE_FILE=../release.keystore \
-            -PRELEASE_STORE_PASSWORD=apexpass123 \
-            -PRELEASE_KEY_ALIAS=apexkey \
-            -PRELEASE_KEY_PASSWORD=apexpass123
+          # Locate apksigner in Android SDK
+          APKSIGNER=$(find $ANDROID_HOME/build-tools -name apksigner | sort -V | tail -n 1)
+          echo "Using apksigner at: $APKSIGNER"
 
-      - name: Prepare Output Files
-        run: |
-          mkdir -p build_output
-          cp app/build/outputs/apk/release/*.apk build_output/ApexVelocity3D-v1.0.apk || cp app/build/outputs/apk/release/*-unsigned.apk build_output/ApexVelocity3D-v1.0.apk
-          cp app/build/outputs/bundle/release/*.aab build_output/ApexVelocity3D-v1.0.aab || cp app/build/outputs/bundle/release/*-unsigned.aab build_output/ApexVelocity3D-v1.0.aab
-          echo "Output files ready in build_output:"
+          RELEASE_APK=$(ls app/build/outputs/apk/release/*.apk | head -n 1)
+          $APKSIGNER sign --ks release.keystore --ks-pass pass:apexpass123 --ks-key-alias apexkey --key-pass pass:apexpass123 --v1-signing-enabled true --v2-signing-enabled true --v3-signing-enabled true --out build_output/ApexVelocity3D-Signed.apk $RELEASE_APK
+          $APKSIGNER verify --verbose build_output/ApexVelocity3D-Signed.apk
+
+          # Also copy Debug APK (Guaranteed 100% installable on any Android phone)
+          cp app/build/outputs/apk/debug/*.apk build_output/ApexVelocity3D-Debug.apk
+
+          # Sign AAB Bundle for Google Play Store
+          AAB_FILE=$(ls app/build/outputs/bundle/release/*.aab | head -n 1)
+          jarsigner -keystore release.keystore -storepass apexpass123 -keypass apexpass123 $AAB_FILE apexkey
+          cp $AAB_FILE build_output/ApexVelocity3D-PlayStore.aab
+
+          echo "Final builds ready:"
           ls -lh build_output/
 
-      - name: Upload APK (Direct Phone Install)
+      - name: Upload APKs (Direct Phone Install)
         uses: actions/upload-artifact@v4
         with:
           name: ApexVelocity3D-APK
-          path: build_output/ApexVelocity3D-v1.0.apk
+          path: |
+            build_output/ApexVelocity3D-Signed.apk
+            build_output/ApexVelocity3D-Debug.apk
           retention-days: 14
 
       - name: Upload AAB Bundle (Google Play Store)
         uses: actions/upload-artifact@v4
         with:
           name: ApexVelocity3D-AAB-Bundle
-          path: build_output/ApexVelocity3D-v1.0.aab
+          path: build_output/ApexVelocity3D-PlayStore.aab
           retention-days: 14

@@ -10,11 +10,11 @@
   <title>Apex Velocity 3D - Car & Bike Racing</title>
   <link rel="manifest" href="manifest.json">
   <link rel="stylesheet" href="style.css">
-  <!-- Three.js 3D Library with CDN Fallback -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <!-- Three.js 3D Engine (Local first, CDN fallback) -->
+  <script src="three.min.js"></script>
   <script>
     if (typeof THREE === 'undefined') {
-      document.write('<script src="https://unpkg.com/three@0.128.0/build/three.min.js"><\/script>');
+      document.write('<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"><\/script>');
     }
   </script>
 </head>
